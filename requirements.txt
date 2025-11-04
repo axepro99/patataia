@@ -1,0 +1,15 @@
+# Para interactuar con la API de Binance
+python-binance
+
+# Manipulación de datos
+pandas
+numpy
+
+# Para calcular indicadores técnicos
+ta
+
+# Framework de Machine Learning
+tensorflow
+
+# Para escalar datos y otras utilidades
+scikit-learn
