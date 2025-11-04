@@ -1,35 +1,69 @@
-import pandas as pd
+
 import os
+import numpy as np
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-def load_stock_data(data_path='../data'):
+def get_image_generators(batch_size=32, img_size=(224, 224)):
     """
-    Carga los datos de los patrones de gráficos de bolsa desde un archivo CSV.
-
+    Crea generadores de datos para imágenes de Candle Stick Patterns y Stock Chart Patterns.
+    Las carpetas deben tener subcarpetas por clase: 'up' y 'down'.
     Args:
-        data_path (str): La ruta a la carpeta 'data' donde se encuentran los CSV.
-
+        batch_size (int): Tamaño de lote.
+        img_size (tuple): Tamaño de las imágenes.
     Returns:
-        pandas.DataFrame: Un DataFrame con los datos cargados.
+        train_gen, val_gen: Generadores de Keras para entrenamiento y validación.
     """
-    # Asume que el dataset de patrones de gráficos tiene un CSV principal.
-    # DEBERÁS AJUSTAR 'nombre_del_fichero.csv' al nombre real del archivo.
-    csv_path = os.path.join(data_path, 'stock-chart-patterns', 'nombre_del_fichero.csv') # ¡AJUSTA ESTE NOMBRE!
+    # Candle Stick Patterns (entrenamiento base)
+    candle_dir = os.path.join(os.getcwd(), 'candle-stick-patterns', 'image-data')
+    # Stock Chart Patterns (fine-tuning)
+    stock_dir = os.path.join(os.getcwd(), 'stock-chart-patterns', 'Patterns')
 
-    if not os.path.exists(csv_path):
-        print(f"Error: No se encontró el fichero en {csv_path}")
-        print("Asegúrate de haber descargado el dataset y de que el nombre del fichero es correcto.")
-        return None
+    # Data augmentation para entrenamiento
+    train_datagen = ImageDataGenerator(
+        rescale=1./255,
+        validation_split=0.2,
+        rotation_range=10,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        shear_range=0.1,
+        zoom_range=0.1,
+        horizontal_flip=True
+    )
 
-    print(f"Cargando datos desde {csv_path}...")
-    df = pd.read_csv(csv_path)
-    print("Datos cargados con éxito.")
-    return df
+    # Generador para Candle Stick Patterns
+    candle_train_gen = train_datagen.flow_from_directory(
+        candle_dir,
+        target_size=img_size,
+        batch_size=batch_size,
+        class_mode='binary',
+        subset='training',
+        shuffle=True
+    )
+    candle_val_gen = train_datagen.flow_from_directory(
+        candle_dir,
+        target_size=img_size,
+        batch_size=batch_size,
+        class_mode='binary',
+        subset='validation',
+        shuffle=True
+    )
 
-if __name__ == '__main__':
-    # Ejemplo de cómo usar la función
-    stock_patterns_df = load_stock_data()
-    if stock_patterns_df is not None:
-        print("\nPrimeras 5 filas del dataset:")
-        print(stock_patterns_df.head())
-        print("\nInformación del DataFrame:")
-        stock_patterns_df.info()
+    # Generador para Stock Chart Patterns (fine-tuning)
+    stock_train_gen = train_datagen.flow_from_directory(
+        stock_dir,
+        target_size=img_size,
+        batch_size=batch_size,
+        class_mode='binary',
+        subset='training',
+        shuffle=True
+    )
+    stock_val_gen = train_datagen.flow_from_directory(
+        stock_dir,
+        target_size=img_size,
+        batch_size=batch_size,
+        class_mode='binary',
+        subset='validation',
+        shuffle=True
+    )
+
+    return candle_train_gen, candle_val_gen, stock_train_gen, stock_val_gen
